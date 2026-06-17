@@ -3,8 +3,10 @@ const router = express.Router();
 const ModelParser = require('../models/ModelParser');
 const DataGenerator = require('../generator/DataGenerator');
 const DataConverter = require('../utils/converter');
+const FieldRecommender = require('../utils/fieldRecommender');
 
 const modelParser = new ModelParser();
+const fieldRecommender = new FieldRecommender();
 
 router.post('/parse', (req, res) => {
   try {
@@ -240,6 +242,46 @@ router.get('/templates', (req, res) => {
       }
     ]
   });
+});
+
+router.get('/recommend-field', (req, res) => {
+  try {
+    const { name } = req.query;
+
+    if (!name || !name.trim()) {
+      return res.json({
+        success: false,
+        error: '字段名不能为空'
+      });
+    }
+
+    const recommendation = fieldRecommender.recommend(name);
+
+    res.json({
+      success: true,
+      data: recommendation
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.get('/field-rules', (req, res) => {
+  try {
+    const rules = fieldRecommender.getAllRules();
+    res.json({
+      success: true,
+      data: rules
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 module.exports = router;

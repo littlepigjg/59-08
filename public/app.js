@@ -24,6 +24,9 @@ const app = createApp({
     const fieldTypes = ref([]);
     const formats = ref([]);
     const templates = ref([]);
+    const fieldRecommendation = ref(null);
+    const loadingRecommendation = ref(false);
+    let recommendationDebounceTimer = null;
 
     const modelForm = reactive({
       name: '用户',
@@ -187,6 +190,55 @@ Content-Type: application/json
       if (currentField.value) {
         currentField.value.rule = getDefaultRule(newType);
       }
+    };
+
+    const getFieldRecommendation = async (fieldName) => {
+      if (!fieldName || !fieldName.trim()) {
+        fieldRecommendation.value = null;
+        return;
+      }
+
+      if (recommendationDebounceTimer) {
+        clearTimeout(recommendationDebounceTimer);
+      }
+
+      recommendationDebounceTimer = setTimeout(async () => {
+        loadingRecommendation.value = true;
+        try {
+          const response = await fetch(`/api/recommend-field?name=${encodeURIComponent(fieldName)}`);
+          const result = await response.json();
+
+          if (result.success) {
+            fieldRecommendation.value = result.data;
+          } else {
+            fieldRecommendation.value = null;
+          }
+        } catch (error) {
+          console.error('获取字段推荐失败:', error);
+          fieldRecommendation.value = null;
+        } finally {
+          loadingRecommendation.value = false;
+        }
+      }, 300);
+    };
+
+    const applyRecommendation = (recommendation) => {
+      if (!currentField.value || !recommendation) return;
+
+      currentField.value.type = recommendation.type;
+      currentField.value.label = recommendation.label || currentField.value.name;
+      currentField.value.rule = { ...recommendation.rule };
+
+      if (recommendation.format) {
+        currentField.value.rule.format = recommendation.format;
+      }
+
+      fieldRecommendation.value = null;
+      ElMessage.success(`已应用推荐配置：${recommendation.label}`);
+    };
+
+    const dismissRecommendation = () => {
+      fieldRecommendation.value = null;
     };
 
     const getTypeIcon = (type) => {
@@ -626,6 +678,8 @@ Content-Type: application/json
       fieldTypes,
       formats,
       templates,
+      fieldRecommendation,
+      loadingRecommendation,
       modelForm,
       currentField,
       hasDataToDisplay,
@@ -637,6 +691,9 @@ Content-Type: application/json
       removeField,
       selectField,
       onTypeChange,
+      getFieldRecommendation,
+      applyRecommendation,
+      dismissRecommendation,
       getTypeIcon,
       getTypeLabel,
       randomSeed,

@@ -115,7 +115,61 @@
 
                   <el-form :model="currentField" label-width="120px" label-position="left">
                     <el-form-item label="字段名">
-                      <el-input v-model="currentField.name" placeholder="如：username" />
+                      <el-input
+                        v-model="currentField.name"
+                        placeholder="如：username、phone、email"
+                        @input="getFieldRecommendation($event)"
+                      >
+                        <template #suffix>
+                          <el-icon v-if="loadingRecommendation" class="is-loading"><Loading /></el-icon>
+                          <el-icon v-else-if="fieldRecommendation && !fieldRecommendation.isDefault" style="color: #409eff;"><MagicStick /></el-icon>
+                        </template>
+                      </el-input>
+
+                      <div v-if="fieldRecommendation && !fieldRecommendation.isDefault" class="recommendation-box">
+                        <div class="recommendation-header">
+                          <div class="recommendation-title">
+                            <el-icon><MagicStick /></el-icon>
+                            <span>智能推荐</span>
+                          </div>
+                          <el-button type="text" size="small" @click="dismissRecommendation">
+                            <el-icon><Close /></el-icon>
+                          </el-button>
+                        </div>
+                        <div class="recommendation-content">
+                          <div class="recommendation-item" @click="applyRecommendation(fieldRecommendation)">
+                            <div class="recommendation-item-header">
+                              <span class="recommendation-badge" :class="`type-${fieldRecommendation.type}`">
+                                {{ getTypeIcon(fieldRecommendation.type) }} {{ getTypeLabel(fieldRecommendation.type) }}
+                              </span>
+                              <span v-if="fieldRecommendation.format" class="format-badge">
+                                {{ formats.find(f => f.value === fieldRecommendation.format)?.label || fieldRecommendation.format }}
+                              </span>
+                            </div>
+                            <div class="recommendation-item-body">
+                              <span class="recommendation-label">{{ fieldRecommendation.label }}</span>
+                              <el-button type="primary" size="small" link>
+                                应用推荐
+                                <el-icon><Right /></el-icon>
+                              </el-button>
+                            </div>
+                          </div>
+
+                          <div v-if="fieldRecommendation.suggestions && fieldRecommendation.suggestions.length > 1" class="other-suggestions">
+                            <div class="suggestions-title">其他可能：</div>
+                            <div class="suggestion-list">
+                              <div
+                                v-for="(suggestion, idx) in fieldRecommendation.suggestions.slice(1)"
+                                :key="idx"
+                                class="suggestion-tag"
+                                @click="applyRecommendation(suggestion)"
+                              >
+                                {{ getTypeIcon(suggestion.type) }} {{ suggestion.label }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </el-form-item>
 
                     <el-form-item label="显示标签">
